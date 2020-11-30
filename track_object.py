@@ -1,17 +1,14 @@
 """
-This code is heavily based on the work presented in this tutorial:
+This code is based on the work presented in this tutorial:
 https://www.pyimagesearch.com/2015/09/14/ball-tracking-with-opencv/
 """
 
 from collections import deque
-from pathlib import Path
 import time
-import types
 import numpy as np
 import cv2
 import imutils
 from imutils.video import VideoStream
-import pycozmo
 
 
 class TrackObject:
@@ -21,80 +18,43 @@ class TrackObject:
     Args:
         Required:
 
-        color_lower_bound (tuple): Defines the lower bound HSV values of the object
-        color_upper_bound (tuple): Defines the upper bound HSV values of the object
-
-        Optional parameters:
-
-        draw_bounding_color (tuple, optional): Defaults to (0, 255, 255).
-        draw_bounding_thickness (int, optional): Defaults to 2.
-        draw_center_color (tuple, optional): Defaults to (0, 0, 255).
-        draw_center_thickness (int, optional): Defaults to -1.
-        draw_center_radius (int, optional): Defaults to 5.
-        num_trail_frames (int, optional): Defaults to 64.
-        draw_trail_max_thickness (float, optional): Defaults to 2.5.
-        draw_trail_color (tuple, optional): Defaults to (0, 0, 255).
-        resize_to_width (int, optional): Defaults to 600.
-        resize_to_height ([type], optional): Defaults to None.
-        blur_kernel_width (int, optional): Defaults to 11.
-        blur_kernel_height (int, optional): Defaults to 11.
-        video_file_path ([type], optional): Defaults to None.
-        video_src_index (int, optional): Defaults to 0.
+        robot (Robot object): Object that connects to the robot and controls it's actions
+        video_src_index (int): ID of available cameras on users computer
     """
-    def __init__(
-        self,
-        color_lower_bound=(29, 86, 6),
-        color_upper_bound=(64, 255, 255),
-        draw_bounding_color=(0, 255, 255),
-        draw_bounding_thickness=2,
-        draw_center_color=(0, 0, 255),
-        draw_center_thickness=-1,
-        draw_center_radius=5,
-        num_trail_frames=64,
-        draw_trail_max_thickness=2.5,
-        draw_trail_color=(0, 0, 255),
-        resize_to_width=600,
-        resize_to_height=None,
-        blur_kernel_width=11,
-        blur_kernel_height=11,
-        video_file_path=None,
-        video_src_index=0,
-        on_gesture_left=None,
-        on_gesture_right=None,
-        on_gesture_in=None,
-        on_gesture_out=None,
-    ):
-        self.color_lower_bound = color_lower_bound
-        self.color_upper_bound = color_upper_bound
-        self.draw_bounding_color = draw_bounding_color
-        self.draw_bounding_thickness = draw_bounding_thickness
-        self.draw_center_color = draw_center_color
-        self.draw_center_thickness = draw_center_thickness
-        self.draw_center_radius = draw_center_radius
-        self.num_trail_frames = num_trail_frames
-        self.draw_trail_max_thickness = draw_trail_max_thickness
-        self.draw_trail_color = draw_trail_color
-        self.resize_to_width = resize_to_width
-        self.resize_to_height = resize_to_height
-        self.blur_kernel_width = blur_kernel_width
-        self.blur_kernel_height = blur_kernel_height
-        self.video_file_path = video_file_path
+
+    def __init__(self, robot, video_src_index=0):
+        # Variable that may need to be more flexible
+        self.robot = robot
+        self.robot.on_gesture_left()
         self.video_src_index = video_src_index
-        
-        self.on_gesture_left=on_gesture_left
-        self.on_gesture_right=on_gesture_right
-        self.on_gesture_in=on_gesture_in
-        self.on_gesture_out=on_gesture_out
+
+        # This variables are fairly static
+        self.color_lower_bound = (29, 86, 6)
+        self.color_upper_bound = (64, 255, 255)
+        self.draw_bounding_color = (0, 255, 255)
+        self.draw_bounding_thickness = 2
+        self.draw_center_color = (0, 0, 255)
+        self.draw_center_thickness = -1
+        self.draw_center_radius = 5
+        self.num_trail_frames = 64
+        self.draw_trail_max_thickness = 2.5
+        self.draw_trail_color = (0, 0, 255)
+        self.resize_to_width = 600
+        self.resize_to_height = None
+        self.blur_kernel_width = 11
+        self.blur_kernel_height = 11
+        self.video_file_path = None
 
         # Connect video_source.
         if self.video_file_path is None:
             self.video_source = VideoStream(src=video_src_index).start()
         else:
-            self.video_source = cv2.VideoCapture(video_file_path)
-        time.sleep(2.0)  # Allows video_source to warm up. No idea what that means.
+            self.video_source = cv2.VideoCapture(self.video_file_path)
+        # Allows video_source to warm up. No idea what that means.
+        time.sleep(2.0)
 
-        self.trail = deque(maxlen=num_trail_frames)
-        self.radii = deque(maxlen=num_trail_frames)
+        self.trail = deque(maxlen=self.num_trail_frames)
+        self.radii = deque(maxlen=self.num_trail_frames)
 
         self.last_lateral_gesture_text = None
         self.last_axial_gesture_text = None
@@ -125,8 +85,10 @@ class TrackObject:
         """
         # Scale inputs.
         gesture_size = int(gesture_size_proportion * trail.maxlen)
-        vertical_strike_size = int(vertical_strike_size_proportion * gesture_size)
-        max_vertical_strikes = int(max_vertical_strike_proportion * gesture_size)
+        vertical_strike_size = int(
+            vertical_strike_size_proportion * gesture_size)
+        max_vertical_strikes = int(
+            max_vertical_strike_proportion * gesture_size)
         max_avg_vertical_deltas = int(max_avg_vertical_deltas_proportion *
                                       gesture_size)
 
@@ -152,12 +114,14 @@ class TrackObject:
         num_left, num_right = (num_right, num_left)
         num_nonzero = num_left + num_right
 
+        print(num_left / num_nonzero, lateral_threshold_proportion)
         if num_left / num_nonzero >= lateral_threshold_proportion and num_left > num_right:
             return "left"
         elif num_right / num_nonzero >= lateral_threshold_proportion and num_right > num_left:
             return "right"
         else:
             return None
+
     @staticmethod
     def detect_axial_gesture(radii,
                              gesture_size_proportion=1 / 2,
@@ -192,9 +156,7 @@ class TrackObject:
         else:
             return None
 
-
     def next_frame(self):
-
         # Read the current frame.
         if self.video_file_path is None:
             # If video_source is a imutils.video.VideoStream object, i.e. connected to a live camera
@@ -206,9 +168,7 @@ class TrackObject:
         # If we failed to read a frame, the video_source has been exhausted or terminated.
         if frame is None:
             self.teardown()
-            return True #terminate => True
-
-
+            return True  # terminate => True
 
         # Resize frame.
         frame = imutils.resize(frame,
@@ -244,6 +204,7 @@ class TrackObject:
         if len(color_mask_contours) >= 1:
             largest_contour = max(color_mask_contours, key=cv2.contourArea)
             ((x, y), radius) = cv2.minEnclosingCircle(largest_contour)
+
             # If largest_contour is sufficiently large, find and record its center,
             # and draw the circle and center on the frame.
             if radius > 10:
@@ -253,6 +214,7 @@ class TrackObject:
                               largest_contour_moments["m00"]),
                           int(largest_contour_moments["m01"] /
                               largest_contour_moments["m00"]))
+
                 # Draw the circle.
                 cv2.circle(frame,
                            center=(int(x), int(y)),
@@ -265,6 +227,7 @@ class TrackObject:
                            radius=self.draw_center_radius,
                            color=self.draw_center_color,
                            thickness=self.draw_center_thickness)
+
         self.trail.appendleft(center)
         self.radii.appendleft(valid_radius)
 
@@ -277,10 +240,10 @@ class TrackObject:
             self.lateral_gesture_text = f"lateral: {lateral_gesture}"
             self.last_lateral_gesture_text = self.lateral_gesture_text
             self.frames_since_lateral_gesture = 0
-            if lateral_gesture == 'left' and self.on_gesture_left is not None:
-                self.on_gesture_left()
-            elif lateral_gesture == 'right' and self.on_gesture_right is not None:
-                self.on_gesture_right()
+            if lateral_gesture == 'left':
+                self.robot.on_gesture_left()
+            elif lateral_gesture == 'right':
+                self.robot.on_gesture_right()
         else:
             self.frames_since_lateral_gesture += 1
             if self.frames_since_lateral_gesture < self.trail.maxlen / 2:
@@ -307,9 +270,9 @@ class TrackObject:
             self.last_axial_gesture_text = self.axial_gesture_text
             self.frames_since_axial_gesture = 0
             if axial_gesture == 'in' and self.on_gesture_in is not None:
-                self.on_gesture_in()
+                self.robot.on_gesture_in()
             elif axial_gesture == 'out' and self.on_gesture_out is not None:
-                self.on_gesture_out()
+                self.robot.on_gesture_out()
         else:
             self.frames_since_axial_gesture += 1
             if self.frames_since_axial_gesture < self.trail.maxlen / 2:
@@ -354,13 +317,11 @@ class TrackObject:
         # If the user pressed 'q', exit the loop and terminate.
         if key == ord("q"):
             self.teardown()
-            return True  #terminate => True
+            return True  # terminate => True
         else:
-            return False #terminate stays False
-
+            return False  # terminate stays False
 
     def teardown(self):
-
         # If video_source is not connected to a video file, stop the camera video stream.
         # Else, release the video file.
         if self.video_file_path is None:
