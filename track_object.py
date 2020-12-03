@@ -22,10 +22,8 @@ class TrackObject:
         video_src_index (int): ID of available cameras on users computer
     """
 
-    def __init__(self, robot, video_src_index=0):
+    def __init__(self, video_src_index=0):
         # Variable that may need to be more flexible
-        self.robot = robot
-        self.robot.on_gesture_left()
         self.video_src_index = video_src_index
 
         # This variables are fairly static
@@ -157,6 +155,9 @@ class TrackObject:
             return None
 
     def next_frame(self):
+
+        gesture = None
+
         # Read the current frame.
         if self.video_file_path is None:
             # If video_source is a imutils.video.VideoStream object, i.e. connected to a live camera
@@ -241,9 +242,9 @@ class TrackObject:
             self.last_lateral_gesture_text = self.lateral_gesture_text
             self.frames_since_lateral_gesture = 0
             if lateral_gesture == 'left':
-                self.robot.on_gesture_left()
+                gesture = 'left'
             elif lateral_gesture == 'right':
-                self.robot.on_gesture_right()
+                gesture = 'right'
         else:
             self.frames_since_lateral_gesture += 1
             if self.frames_since_lateral_gesture < self.trail.maxlen / 2:
@@ -270,9 +271,9 @@ class TrackObject:
             self.last_axial_gesture_text = self.axial_gesture_text
             self.frames_since_axial_gesture = 0
             if axial_gesture == 'in' and self.on_gesture_in is not None:
-                self.robot.on_gesture_in()
+                gesture = 'in'
             elif axial_gesture == 'out' and self.on_gesture_out is not None:
-                self.robot.on_gesture_out()
+                gesture = 'out'
         else:
             self.frames_since_axial_gesture += 1
             if self.frames_since_axial_gesture < self.trail.maxlen / 2:
@@ -317,9 +318,19 @@ class TrackObject:
         # If the user pressed 'q', exit the loop and terminate.
         if key == ord("q"):
             self.teardown()
-            return True  # terminate => True
+            return 'terminate'
         else:
-            return False  # terminate stays False
+            return gesture
+
+
+    def detect_gesture(self):
+
+        gesture = None
+        while gesture is None:
+            gesture = self.next_frame()
+
+        return gesture
+
 
     def teardown(self):
         # If video_source is not connected to a video file, stop the camera video stream.
