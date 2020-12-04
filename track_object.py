@@ -112,7 +112,6 @@ class TrackObject:
         num_left, num_right = (num_right, num_left)
         num_nonzero = num_left + num_right
 
-        print(num_left / num_nonzero, lateral_threshold_proportion)
         if num_left / num_nonzero >= lateral_threshold_proportion and num_left > num_right:
             return "left"
         elif num_right / num_nonzero >= lateral_threshold_proportion and num_right > num_left:

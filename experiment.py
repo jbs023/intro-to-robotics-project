@@ -1,8 +1,4 @@
-import types
-from typing import Optional
 import pycozmo
-import numpy as np
-from functools import partial
 
 from track_object import TrackObject
 
@@ -12,38 +8,25 @@ class Robot():
     def __init__(self, cli):
         self.cli = cli
         self.cliff_detected = False
+        self.speed = 30
 
-        cli.turn_in_place = types.MethodType(self.turn_in_place, self.cli)
-        cli.add_handler(pycozmo.event.EvtCliffDetectedChange,
-                        partial(self.on_cliff_detected, self))
+        cli.add_handler(pycozmo.event.EvtCliffDetectedChange, self.on_cliff_detected)
 
     def on_gesture_left(self):
         """
         Backup a little, turn left, go forward.
         """
         # Speed has units of mmps.
-        speed = -10
-        self.cli.drive_wheels(lwheel_speed=speed,
-                              rwheel_speed=speed, duration=3.0)
-        angle = -np.pi/2
-        speed = 10
-        duration = 3.0
-        self.cli.drive_wheels(lwheel_speed=-speed,
-                              rwheel_speed=speed, duration=duration)
+        self.cli.drive_wheels(lwheel_speed=-self.speed, rwheel_speed=-self.speed, duration=0.5)
+        self.cli.drive_wheels(lwheel_speed=-self.speed, rwheel_speed=self.speed, duration=2.5)
 
     def on_gesture_right(self):
         """
         Backup a little, turn left, go forward.
         """
         # Speed has units of mmps.
-        speed = -10
-        self.cli.drive_wheels(lwheel_speed=speed,
-                              rwheel_speed=speed, duration=3.0)
-        angle = -np.pi/2
-        speed = 10
-        duration = 3.0
-        self.cli.drive_wheels(lwheel_speed=speed,
-                              rwheel_speed=-speed, duration=duration)
+        self.cli.drive_wheels(lwheel_speed=-self.speed, rwheel_speed=-self.speed, duration=0.5)
+        self.cli.drive_wheels(lwheel_speed=self.speed, rwheel_speed=-self.speed, duration=2.5)
 
     def on_gesture_in():
         pass
@@ -52,33 +35,35 @@ class Robot():
         pass
 
     def default_behavior(self):
-        self.cli.drive_wheels(lwheel_speed=speed, rwheel_speed=speed, duration=1)
+        self.cli.drive_wheels(lwheel_speed=self.speed, rwheel_speed=self.speed, duration=1.0)
         
 
-    def on_cliff_detected(self, state : bool):
+    def on_cliff_detected(self, cli, state : bool):
         if state:
             self.cli.stop_all_motors()
             self.cliff_detected = True
 
 def main():
-
-
-
     with pycozmo.connect() as cli:
-
         robot = Robot(cli)
         object_tracker = TrackObject()
 
+        cliff_counter = 0;
+
         # Loop until program end.
         while True:
-
+            if cliff_counter > 1:
+                break
+            
             if not robot.cliff_detected:
-                # Run default robot b`ehavior.
-                robot.default_behavior() # e.g. drive forward 10 seconds
+                # Run default robot behavior.
+                robot.default_behavior()
             else:
-                robot.cliff_detected = False
                 # On cliff detected, loop over frames until a gesture is detected.
                 gesture = object_tracker.detect_gesture()
+                robot.cliff_detected = False
+                cliff_counter += 1
+
                 # Call robot stuff based on gesture.
                 if gesture == 'terminate':
                     object_tracker.teardown()
@@ -87,8 +72,7 @@ def main():
                     robot.on_gesture_left()
                 elif gesture == 'right':
                     robot.on_gesture_right()
-
-
+        print("Done!")
 
 
 if __name__ == "__main__":
