@@ -1,3 +1,4 @@
+import time
 import pycozmo
 
 from track_object import TrackObject
@@ -10,6 +11,7 @@ class Robot():
         self.cliff_detected = False
         self.speed = 30
 
+        cli.set_lift_height(0.5)
         cli.add_handler(pycozmo.event.EvtCliffDetectedChange, self.on_cliff_detected)
 
     def on_gesture_left(self):
@@ -46,13 +48,18 @@ class Robot():
 def main():
     with pycozmo.connect() as cli:
         robot = Robot(cli)
+        
+        height = (pycozmo.MAX_LIFT_HEIGHT.mm - pycozmo.MIN_LIFT_HEIGHT.mm)/2
+        cli.set_lift_height(pycozmo.MAX_LIFT_HEIGHT.mm)
+        cli.move_lift(10.0)
+        time.sleep(1)
         object_tracker = TrackObject()
 
         cliff_counter = 0;
 
         # Loop until program end.
         while True:
-            if cliff_counter > 1:
+            if cliff_counter > 6:
                 break
             
             if not robot.cliff_detected:
