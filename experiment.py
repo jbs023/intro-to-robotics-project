@@ -62,11 +62,11 @@ class Robot():
         # Reset origin.
         pkt = pycozmo.protocol_encoder.SetOrigin()
         self.cli.conn.send(pkt)
-        # x is forward, y is right.
+        # x is forward, y is left.
         coords = np.array([
             [0, 0],
-            [0, 300],
-            [500, 300],
+            [0, -300],
+            [500, -300],
             [500, 0],
         ])
 
@@ -97,8 +97,8 @@ class Robot():
         # x is forward, y is right.
         coords = np.array([
             [0, 0],
-            [0, -300],
-            [500, -300],
+            [0, 300],
+            [500, 300],
             [500, 0],
         ])
 
