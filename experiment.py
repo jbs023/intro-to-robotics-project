@@ -59,7 +59,7 @@ def main():
 
         # Loop until program end.
         while True:
-            if cliff_counter > 6:
+            if cliff_counter > 2:
                 break
             
             if not robot.cliff_detected:
