@@ -108,39 +108,41 @@ def main():
 
         cliff_counter = 0;
 
-        # Loop until program end.
+        # Loop until program terminates.
         while True:
             if cliff_counter > 6:
                 break
-            
+            gesture = None
             obstacle_detected = False # detect_obstacle()
 
             # Request gesture to navigate cliff.
             if robot.cliff_detected:
                 # On cliff detected, loop over frames until a gesture is detected.
-                gesture = object_tracker.detect_gesture()
                 robot.cliff_detected = False
                 cliff_counter += 1
-
-                # Call robot stuff based on gesture.
-                if gesture == 'terminate':
-                    object_tracker.teardown()
-                    break
-                elif gesture == 'left':
-                    robot.on_gesture_left()
-                elif gesture == 'right':
-                    robot.on_gesture_right()
-            
+                while gesture not in ['terminate', 'left', 'right']:
+                    gesture = object_tracker.detect_gesture()
+                    
             # Request gesture to navigate obstacle.
             elif obstacle_detected:
-                gesture = object_tracker.detect_gesture()
-                if gesture == 'in':
-                    robot.on_gesture_in()
-                elif gesture == 'out':
-                    robot.on_gesture_out()
+                while gesture not in ['terminate', 'in', 'out']:
+                    gesture = object_tracker.detect_gesture()
 
+            # Call robot stuff based on gesture.
+            if gesture == 'terminate':
+                object_tracker.teardown()
+                break
+            elif gesture == 'left':
+                robot.on_gesture_left()
+            elif gesture == 'right':
+                robot.on_gesture_right()
+            elif gesture == 'in':
+                robot.on_gesture_in()
+            elif gesture == 'out':
+                robot.on_gesture_out()
             # Perform default behavior.
             else:
+                # No cliff or obstacle detected.
                 robot.default_behavior()
 
         print("Mission complete!")
