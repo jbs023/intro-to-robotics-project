@@ -61,8 +61,8 @@ class Robot():
         coords = np.array([
             [0, 0],
             [300, 0],
-            [300, 300],
-            [0, 300],
+            [300, 500],
+            [0, 500],
         ])
 
         for coord_index in range(len(coords) - 1):
@@ -89,8 +89,8 @@ class Robot():
         coords = np.array([
             [0, 0],
             [-300, 0],
-            [-300, 300],
-            [0, 300],
+            [-300, 500],
+            [0, 500],
         ])
 
         for coord_index in range(len(coords) - 1):
