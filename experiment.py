@@ -45,6 +45,8 @@ class Robot():
         # Speed has units of mmps.
         self.cli.drive_wheels(lwheel_speed=-self.speed, rwheel_speed=-self.speed, duration=0.5)
         self.cli.drive_wheels(lwheel_speed=-self.speed, rwheel_speed=self.speed, duration=2.5)
+        self.object_detected = False
+        self.cliff_detected = False
 
     def on_gesture_right(self):
         """
@@ -53,17 +55,23 @@ class Robot():
         # Speed has units of mmps.
         self.cli.drive_wheels(lwheel_speed=-self.speed, rwheel_speed=-self.speed, duration=0.5)
         self.cli.drive_wheels(lwheel_speed=self.speed, rwheel_speed=-self.speed, duration=2.5)
+        self.object_detected = False
+        self.cliff_detected = False
 
     def on_gesture_in(self):
         """
         Follow a path around to the right.
         """
-        print("Performing in gesture")
+        # Reset origin.
+        pkt = pycozmo.protocol_encoder.SetOrigin()
+        self.cli.conn.send(pkt)
+
+        # x is forward, y is left.
         coords = np.array([
             [0, 0],
             [0, -150],
             [300, -150],
-            [300, 0],
+            [300, 0]
         ])
 
         for coord_index in range(len(coords) - 1):
@@ -77,16 +85,22 @@ class Robot():
 
         pkt = pycozmo.protocol_encoder.ExecutePath()
         self.cli.conn.send(pkt)
-        time.sleep(20)
+        time.sleep(25)
 
         # Turn right.
         self.cli.drive_wheels(lwheel_speed=self.speed, rwheel_speed=-self.speed, duration=2.5)
+        self.object_detected = False
+        self.cliff_detected = False
 
     def on_gesture_out(self):
         """
         Follow a path around to the left.
         """
+        # Reset origin.
+        pkt = pycozmo.protocol_encoder.SetOrigin()
+        self.cli.conn.send(pkt)
 
+        # x is forward, y is right.
         coords = np.array([
             [0, 0],
             [0, 150],
@@ -105,10 +119,12 @@ class Robot():
 
         pkt = pycozmo.protocol_encoder.ExecutePath()
         self.cli.conn.send(pkt)
-        time.sleep(20)
+        time.sleep(25)
         
         # Turn left.
         self.cli.drive_wheels(lwheel_speed=-self.speed, rwheel_speed=self.speed, duration=2.5)
+        self.object_detected = False
+        self.cliff_detected = False
 
     def default_behavior(self):
         self.cli.drive_wheels(lwheel_speed=self.speed, rwheel_speed=self.speed, duration=1.0)
@@ -122,6 +138,7 @@ class Robot():
         """ Handle new images, coming from the robot. """
         self.latest_im = new_im
         self.object_detector_counter += 1
+     
         if self.object_detector_counter % 14 == 0 and not (self.object_detected or self.cliff_detected):
             self.previous_step = self.current_step
             distance = self.object_detector.detect_object(self.latest_im)
@@ -156,14 +173,12 @@ def main():
 
             # Request gesture to navigate cliff.
             if robot.cliff_detected:
-                robot.cliff_detected = False
                 cliff_counter += 1
                 while gesture not in ['terminate', 'left', 'right']:
                     gesture = gesture_detector.detect_gesture()
                     
             # Request gesture to navigate obstacle.
             elif robot.object_detected:
-                robot.object_detected = False
                 while gesture not in ['terminate', 'left', 'right', 'in', 'out']:
                     gesture = gesture_detector.detect_gesture()
 
