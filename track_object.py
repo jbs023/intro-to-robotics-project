@@ -269,9 +269,9 @@ class TrackObject:
             self.axial_gesture_text = f"axial: {axial_gesture}"
             self.last_axial_gesture_text = self.axial_gesture_text
             self.frames_since_axial_gesture = 0
-            if axial_gesture == 'in' and self.on_gesture_in is not None:
+            if axial_gesture == 'in':
                 gesture = 'in'
-            elif axial_gesture == 'out' and self.on_gesture_out is not None:
+            elif axial_gesture == 'out':
                 gesture = 'out'
         else:
             self.frames_since_axial_gesture += 1
@@ -323,7 +323,6 @@ class TrackObject:
 
 
     def detect_gesture(self):
-
         gesture = None
         while gesture is None:
             gesture = self.next_frame()
