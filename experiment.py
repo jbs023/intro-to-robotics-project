@@ -58,11 +58,16 @@ class Robot():
         """
         Follow a path around to the right.
         """
+
+        # Reset origin.
+        pkt = pycozmo.protocol_encoder.SetOrigin()
+        self.cli.conn.send(pkt)
+        # x is forward, y is right.
         coords = np.array([
             [0, 0],
-            [300, 0],
-            [300, 500],
-            [0, 500],
+            [0, 300],
+            [500, 300],
+            [500, 0],
         ])
 
         for coord_index in range(len(coords) - 1):
@@ -86,11 +91,15 @@ class Robot():
         Follow a path around to the left.
         """
 
+        # Reset origin.
+        pkt = pycozmo.protocol_encoder.SetOrigin()
+        self.cli.conn.send(pkt)
+        # x is forward, y is right.
         coords = np.array([
             [0, 0],
-            [-300, 0],
-            [-300, 500],
-            [0, 500],
+            [0, -300],
+            [500, -300],
+            [500, 0],
         ])
 
         for coord_index in range(len(coords) - 1):
