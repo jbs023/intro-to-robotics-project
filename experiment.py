@@ -58,11 +58,12 @@ class Robot():
         """
         Follow a path around to the right.
         """
+        print("Performing in gesture")
         coords = np.array([
             [0, 0],
+            [0, -150],
+            [300, -150],
             [300, 0],
-            [300, 500],
-            [0, 500],
         ])
 
         for coord_index in range(len(coords) - 1):
@@ -76,7 +77,7 @@ class Robot():
 
         pkt = pycozmo.protocol_encoder.ExecutePath()
         self.cli.conn.send(pkt)
-        time.sleep(30)
+        time.sleep(20)
 
         # Turn right.
         self.cli.drive_wheels(lwheel_speed=self.speed, rwheel_speed=-self.speed, duration=2.5)
@@ -88,9 +89,9 @@ class Robot():
 
         coords = np.array([
             [0, 0],
-            [-300, 0],
-            [-300, 500],
-            [0, 500],
+            [0, 150],
+            [300, 150],
+            [300, 0],
         ])
 
         for coord_index in range(len(coords) - 1):
@@ -104,7 +105,7 @@ class Robot():
 
         pkt = pycozmo.protocol_encoder.ExecutePath()
         self.cli.conn.send(pkt)
-        time.sleep(30)
+        time.sleep(20)
         
         # Turn left.
         self.cli.drive_wheels(lwheel_speed=-self.speed, rwheel_speed=self.speed, duration=2.5)
